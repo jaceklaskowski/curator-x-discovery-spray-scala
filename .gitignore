@@ -1,7 +1,17 @@
 .idea/
-/RUNNING_PID
-/logs/
+
+*.class
+*.log
+
+# sbt specific
+.cache/
+.history/
+.lib/
+dist/*
+target/
+lib_managed/
+src_managed/
 /project/*-shim.sbt
-/project/project/
-/project/target/
-/target/
+project/project/
+project/target/
+project/plugins/project/
