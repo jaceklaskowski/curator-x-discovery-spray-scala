@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.zookeeper.CreateMode
+import org.apache.zookeeper.KeeperException.ConnectionLossException
 import spray.http.MediaTypes
 import spray.httpx.SprayJsonSupport
 import spray.json.JsonFormat
@@ -51,15 +52,21 @@ object ServiceDiscoveryServerApp extends App with SimpleRoutingApp {
     CuratorFrameworkFactory.newClient(zookeeperConnectionString, retryPolicy)
   }
 
-  client.start
+  try {
+    client.start
 
-  Try(client.create().forPath("/runtime"))
+    Try(client.create().forPath("/runtime"))
 
-  client.create().withMode(CreateMode.EPHEMERAL).forPath(s"/runtime/${java.util.UUID.randomUUID()}")
-  client.create().withMode(CreateMode.EPHEMERAL).forPath(s"/runtime/${java.util.UUID.randomUUID()}")
+    client.create().withMode(CreateMode.EPHEMERAL).forPath(s"/runtime/${java.util.UUID.randomUUID()}")
+    client.create().withMode(CreateMode.EPHEMERAL).forPath(s"/runtime/${java.util.UUID.randomUUID()}")
 
-  val interface = if (args.length == 1) args(0) else "localhost"
-  val port = if (args.length == 2) args(1).toInt else 8080
-  println(s"interface=$interface port=$port")
-  startServer(interface, port)(route)
+    val interface = if (args.length == 1) args(0) else "localhost"
+    val port = if (args.length == 2) args(1).toInt else 8080
+    println(s"interface=$interface port=$port")
+    startServer(interface, port)(route)
+  } catch {
+    case cls: ConnectionLossException =>
+      println(">>> Connection to ZooKeeper lost")
+      System.exit(1)
+  }
 }
