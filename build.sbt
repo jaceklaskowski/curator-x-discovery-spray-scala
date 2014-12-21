@@ -8,7 +8,7 @@ val sprayVersion   = "1.3.2"
 val akkaVersion    = "2.3.8"
 val curatorVersion = "2.7.0"
 val specs2Version  = "2.4.15"
-val slf4jVersion   = "1.7.9"
+val logbackVersion = "1.1.2"
 
 libraryDependencies ++= Seq("can", "routing") map { a => "io.spray" %% s"spray-$a" % sprayVersion }
 
@@ -30,4 +30,4 @@ scalacOptions in Test ++= Seq("-Yrangepos")
 
 libraryDependencies += "org.apache.curator" % "curator-framework" % curatorVersion
 
-libraryDependencies += "org.slf4j" % "slf4j-simple" % slf4jVersion
+libraryDependencies += "ch.qos.logback" % "logback-classic" % logbackVersion
