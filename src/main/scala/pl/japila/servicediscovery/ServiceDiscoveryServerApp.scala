@@ -58,8 +58,8 @@ object ServiceDiscoveryServerApp extends App with SimpleRoutingApp {
   client.create().withMode(CreateMode.EPHEMERAL).forPath(s"/runtime/${java.util.UUID.randomUUID()}")
   client.create().withMode(CreateMode.EPHEMERAL).forPath(s"/runtime/${java.util.UUID.randomUUID()}")
 
-  val interface = if (args.length == 1) args(0) else "localhost"
-  val port = if (args.length == 2) args(1).toInt else 8080
+  val interface = if (args.length >= 1) args(0) else "localhost"
+  val port = if (args.length >= 2) args(1).toInt else 8080
   println(s"interface=$interface port=$port")
   startServer(interface, port)(route)
 }
