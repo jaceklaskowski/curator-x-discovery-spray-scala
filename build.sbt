@@ -15,6 +15,7 @@ val logbackVersion  = "1.1.2"
 libraryDependencies += "com.typesafe.akka" %% "akka-http-experimental" % akkaHttpVersion
 libraryDependencies += "com.typesafe.akka" %% "akka-stream-experimental" % akkaHttpVersion
 libraryDependencies += "com.typesafe.akka" %% "akka-http-xml-experimental" % akkaHttpVersion
+libraryDependencies += "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaHttpVersion
 
 libraryDependencies += "io.spray" %% "spray-json" % "1.3.1"
 

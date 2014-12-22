@@ -2,10 +2,13 @@ package pl.japila.servicediscovery
 
 import akka.actor.ActorSystem
 import akka.http.marshallers.xml.ScalaXmlSupport
+import akka.http.model.{HttpResponse, HttpRequest}
+import akka.stream.scaladsl.Flow
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.zookeeper.CreateMode
+import spray.json.DefaultJsonProtocol
 
 import scala.util.Try
 
@@ -49,7 +52,7 @@ object ServiceDiscoveryServerApp extends App with IndexRoute {
   import Directives._
   import ScalaXmlSupport._
 
-  val materializedMap = binding startHandlingWith {
+  val handler: Flow[HttpRequest, HttpResponse] =
     rejectEmptyResponse {
       get {
         path("") {
@@ -58,7 +61,6 @@ object ServiceDiscoveryServerApp extends App with IndexRoute {
           pathPrefix(separateOnSlashes("v1/service")) {
             pathPrefix(Segment) { name =>
               path(IntNumber) { id =>
-                println(s">>> Received...($name, $id)")
                 get {
                   complete {
                     s"Received $name $id\n"
@@ -69,14 +71,19 @@ object ServiceDiscoveryServerApp extends App with IndexRoute {
               get {
                 complete {
                   val children = client.getChildren().forPath("/runtime")
+
+                  import akka.http.marshallers.sprayjson._
+                  import SprayJsonSupport._
+                  import DefaultJsonProtocol._
                   import scala.collection.JavaConversions.asScalaBuffer
-                  asScalaBuffer(children).toSeq.toString
+                  asScalaBuffer(children).toSeq
                 }
               }
           }
       }
     }
-  }
+
+  val materializedMap = binding startHandlingWith handler
 
 //  println(s"Server online at http://$interface:$port/\nPress RETURN to stop...")
 //  io.StdIn.readLine()

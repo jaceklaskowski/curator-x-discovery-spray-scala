@@ -53,6 +53,7 @@ You should see on the console:
 
 * Sample request
 
-        curl -v -XPOST -H "Content-type: application/json" -d "{'zzz'}" http://localhost:8080/itcfg/v1/service/
+        curl -v -X GET -H "Accept: application/json" http://localhost:8080/v1/service
+        curl -v -X POST -H "Content-type: application/json" -d "{'zzz'}" http://localhost:8080/v1/service/
 
 * Sample response
