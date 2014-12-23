@@ -44,49 +44,56 @@ object ServiceDiscoveryServerApp extends App with IndexRoute {
   import system.dispatcher
   implicit val fm = FlowMaterializer()
 
-  import akka.http.Http
-
-  val binding = Http().bind(interface = interface, port = port)
-
   import akka.http.server._
   import Directives._
   import ScalaXmlSupport._
 
-  val handler: Flow[HttpRequest, HttpResponse] =
-    rejectEmptyResponse {
+  private val shutdown: Route =
+    path("shutdown") {
       get {
-        path("") {
-          complete(index)
-        } ~
-          pathPrefix(separateOnSlashes("v1/service")) {
-            pathPrefix(Segment) { name =>
-              path(IntNumber) { id =>
-                get {
-                  complete {
-                    s"Received $name $id\n"
-                  }
-                }
-              }
-            } ~
-              get {
-                complete {
-                  val children = client.getChildren().forPath("/runtime")
-
-                  import akka.http.marshallers.sprayjson._
-                  import SprayJsonSupport._
-                  import DefaultJsonProtocol._
-                  import scala.collection.JavaConversions.asScalaBuffer
-                  asScalaBuffer(children).toSeq
-                }
-              }
-          }
+        complete {
+          println(">>> Shutting down now ...")
+          system.shutdown()
+          "Shutting down now ..."
+        }
       }
     }
 
-  val materializedMap = binding startHandlingWith handler
+  private val index: Route =
+    path("") {
+      get {
+        complete(indexPage)
+      }
+    }
 
-//  println(s"Server online at http://$interface:$port/\nPress RETURN to stop...")
-//  io.StdIn.readLine()
-//  binding.unbind(materializedMap).onComplete(_ ⇒ system.shutdown())
+  private val service: Route =
+    // format: OFF
+    pathPrefix(separateOnSlashes("v1/service")) {
+      path(Segment / IntNumber) { (name, id) =>
+        get {
+          complete {
+            s"Received $name $id\n"
+          }
+        }
+      } ~
+      get {
+        complete {
+          val children = client.getChildren().forPath("/runtime")
+
+          import akka.http.marshallers.sprayjson._
+          import SprayJsonSupport._
+          import DefaultJsonProtocol._
+          import scala.collection.JavaConversions.asScalaBuffer
+          asScalaBuffer(children).toSeq
+        }
+      }
+    } // format: ON
+
+  val route: Route = shutdown ~ index ~ service
+
+  import akka.http.Http
+  val binding = Http().bind(interface = interface, port = port)
+
+  val materializedMap = binding startHandlingWith route
 
 }
