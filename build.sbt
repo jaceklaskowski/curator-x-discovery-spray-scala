@@ -1,8 +1,9 @@
 name         := """curator-x-discovery-spray-scala"""
+organization := "pl.japila"
 version      := "1.0"
 scalaVersion := Version.scala
 
-libraryDependencies ++= List(
+libraryDependencies ++= Seq(
   Library.akkaActor,
   Library.akkaHttp,
   Library.akkaHttpSprayJson,
