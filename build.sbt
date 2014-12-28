@@ -3,19 +3,7 @@ organization := "pl.japila"
 version      := "1.0"
 scalaVersion := Version.scala
 
-libraryDependencies ++= Seq(
-  Library.akkaActor,
-  Library.akkaHttp,
-  Library.akkaHttpSprayJson,
-  Library.akkaHttpXml,
-  Library.akkaSlf4j,
-  Library.akkaStream,
-  Library.curator,
-  Library.logbackClassic,
-  Library.sprayJson,
-  Library.akkaTestkit % "test",
-  Library.specs2      % "test"
-)
+libraryDependencies := Dependencies.all
 
 scalacOptions ++= Seq(
   "-feature",

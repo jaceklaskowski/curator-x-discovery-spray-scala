@@ -23,3 +23,22 @@ object Library {
   val specs2            = "org.specs2"         %% "specs2-core"                       % Version.specs2
   val sprayJson         = "io.spray"           %% "spray-json"                        % Version.sprayJson
 }
+
+object Dependencies {
+
+  import Library._
+
+  val all = Seq(
+    akkaActor,
+    akkaHttp,
+    akkaHttpSprayJson,
+    akkaHttpXml,
+    akkaSlf4j,
+    akkaStream,
+    curator,
+    logbackClassic,
+    sprayJson,
+    akkaTestkit % "test",
+    specs2      % "test"
+  )
+}
