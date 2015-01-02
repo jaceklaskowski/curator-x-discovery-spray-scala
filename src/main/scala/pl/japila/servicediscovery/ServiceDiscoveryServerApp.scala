@@ -26,13 +26,12 @@ object ServiceDiscoveryServerApp extends App with Routes {
   import system.dispatcher
 
   import akka.http.Http
-  val binding = Http().bind(interface = interface, port = port)
+  val binding = Http().bind(interface, port)
 
   import akka.stream.FlowMaterializer
+  implicit val fm = FlowMaterializer()
 
   import Directives._
   val route = shutdownGetRoute(system) ~ index(system) ~ service(system)
-  implicit val fm = FlowMaterializer()
-  val materializedMap = binding startHandlingWith route
-
+  binding startHandlingWith route
 }
