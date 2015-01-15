@@ -6,7 +6,7 @@ import akka.http.server.Directives._
 import akka.http.server._
 
 trait ShutdownRoute {
-  def shutdownGetRoute(system: ActorSystem): Route = {
+  def shutdownGetRoute(implicit system: ActorSystem): Route = {
     import system._
     get {
       path("shutdown") {

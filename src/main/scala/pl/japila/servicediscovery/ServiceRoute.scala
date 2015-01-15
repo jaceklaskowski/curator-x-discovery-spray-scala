@@ -1,44 +1,58 @@
 package pl.japila.servicediscovery
 
-import akka.actor.ActorSystem
+import java.util.UUID
+
+import akka.actor.{ActorRef, ActorSystem}
+import akka.http.marshalling.ToResponseMarshallable
 import akka.http.model.MediaTypes
+import akka.http.model.StatusCodes._
 import akka.http.server.Directives._
 import akka.http.server.PathMatchers.Segment
 import akka.http.server._
-import org.apache.curator.framework.CuratorFrameworkFactory
+import akka.stream.FlowMaterializer
+import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.zookeeper.CreateMode
+import spray.json.DefaultJsonProtocol
 
 import scala.util.Try
 
 trait ServiceRoute {
   val hosts = "127.0.0.1:2181"
-  lazy val client = createClient(hosts)
+  implicit lazy val client = createClient(hosts)
+  client.start
 
-  def createClient(hosts: String) = {
+  Seq("/runtime", "/configuration", "/licences").foreach(createPath)
+
+  val sid = java.util.UUID.randomUUID()
+  registerService(sid)
+
+  def createClient(hosts: String): CuratorFramework = {
     val zookeeperConnectionString = hosts
     val retryPolicy = new ExponentialBackoffRetry(1000, 3)
     CuratorFrameworkFactory.newClient(zookeeperConnectionString, retryPolicy)
   }
 
-  client.start
+  def createPath(p: String)(implicit c: CuratorFramework) = {
+    Try(client.create().creatingParentsIfNeeded().forPath(p))
+  }
 
-  Try(client.create().forPath("/runtime"))
+  def registerService(sid: UUID)(implicit client: CuratorFramework) = {
+    val sName = "My brand new service".toCharArray.map(_.toByte)
+    val sPath = "/runtime/" + sid
+    client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(sPath, sName)
+  }
 
-  val sId = java.util.UUID.randomUUID()
-  val sName = "My brand new service".toCharArray.map(_.toByte)
-  val sPath = "/runtime/" + sId
-  client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(sPath, sName)
-
-  def service(implicit system: ActorSystem): Route =
-    pathPrefix("v1") {
-      serviceGetIdRoute ~ serviceGetRoute
+  def service(implicit system: ActorSystem, mat: FlowMaterializer): Route =
+    pathPrefix("v1" / "service") {
+      val a = system.actorOf(ServiceDiscoveryActor.props)
+      serviceGetMeta(a) ~ serviceGetIdRoute ~ serviceGetRoute
     }
 
   def serviceGetIdRoute(implicit system: ActorSystem) = {
     import system._
     get {
-      path("service" / JavaUUID) { serviceId =>
+      path(JavaUUID) { serviceId =>
         try {
           val d = new String(client.getData.forPath(s"/runtime/$serviceId"))
           complete(s"Hello, I'm $d!")
@@ -58,15 +72,43 @@ trait ServiceRoute {
     }
   }
 
-  def serviceGetRoute(implicit system: ActorSystem) = {
+  def serviceGetRoute(implicit system: ActorSystem, mat: FlowMaterializer) = {
     import system._
     get {
-      path("service") {
+      complete {
+        import akka.http.marshalling._
+        // CLEVER: apply is implicit
+        import akka.http.marshalling.ToResponseMarshallable._
+        import akka.http.marshallers.sprayjson.SprayJsonSupport._
+        // Needed for default JSON protocol implicits
+        import DefaultJsonProtocol._
+        childrenFor("/runtime")
+      }
+    } ~ post {
+      import akka.http.marshallers.sprayjson.SprayJsonSupport._
+      import ServiceJsonProtocol._
+      entity(as[Service]) { service =>
         complete {
-          import spray.json.DefaultJsonProtocol._
-          import akka.http.marshallers.sprayjson._
-          import SprayJsonSupport._
-          childrenFor("/runtime")
+          service
+        }
+      }
+    }
+  }
+
+  case class Service(name: String)
+
+  object ServiceJsonProtocol extends DefaultJsonProtocol {
+    implicit val serviceFormat = jsonFormat1(Service)
+  }
+
+  def serviceGetMeta(a: ActorRef)(implicit system: ActorSystem) = {
+    import system._
+    get {
+      path("meta") {
+        complete {
+          import akka.http.marshallers.sprayjson.SprayJsonSupport._
+          import ServiceJsonProtocol._
+          Service("hello world")
         }
       }
     }
@@ -76,6 +118,6 @@ trait ServiceRoute {
     import system._
     val children = client.getChildren().forPath(path)
     import scala.collection.JavaConversions.asScalaBuffer
-    asScalaBuffer(children).toSeq
+    asScalaBuffer(children).toArray
   }
 }

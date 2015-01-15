@@ -7,7 +7,6 @@ object Version {
   val logback   = "1.1.2"
   val scala     = "2.11.4"
   val specs2    = "2.4.15"
-  val sprayJson = "1.3.1"
 }
 
 object Library {
@@ -21,7 +20,6 @@ object Library {
   val curator           = "org.apache.curator" %  "curator-framework"                 % Version.curator
   val logbackClassic    = "ch.qos.logback"     %  "logback-classic"                   % Version.logback
   val specs2            = "org.specs2"         %% "specs2-core"                       % Version.specs2
-  val sprayJson         = "io.spray"           %% "spray-json"                        % Version.sprayJson
 }
 
 object Dependencies {
@@ -37,7 +35,6 @@ object Dependencies {
     akkaStream,
     curator,
     logbackClassic,
-    sprayJson,
     akkaTestkit % "test",
     specs2      % "test"
   )

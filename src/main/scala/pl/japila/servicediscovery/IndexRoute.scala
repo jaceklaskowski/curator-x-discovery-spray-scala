@@ -11,7 +11,7 @@ import akka.http.server._
  */
 trait IndexRoute {
 
-  def index(system: ActorSystem): Route = {
+  def index(implicit system: ActorSystem): Route = {
     import system._
     path("") {
       get {
